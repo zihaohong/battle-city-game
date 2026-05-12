@@ -13,6 +13,7 @@ const BattleCity = {
   lives: 3,
   gameLoop: null,
   isRunning: false,
+  isGameOver: false,
   enemySpawnTimer: 0,
   maxEnemies: 4,
 
@@ -22,6 +23,8 @@ const BattleCity = {
     this.reset();
     this.bindEvents();
     this.draw();
+    this.loadHelpText();
+    this.loadGames();
   },
 
   reset: function() {
@@ -36,9 +39,8 @@ const BattleCity = {
     this.walls = this.generateWalls();
     this.score = 0;
     this.lives = 3;
+    this.isGameOver = false;
     this.enemySpawnTimer = 0;
-    document.getElementById('score').textContent = this.score;
-    document.getElementById('lives').textContent = this.lives;
   },
 
   generateWalls: function() {
@@ -70,10 +72,15 @@ const BattleCity = {
         this.shoot();
       }
     });
-    document.getElementById('startBtn').addEventListener('click', () => {
-      if (!this.isRunning) { this.start(); }
-    });
 
+    // Start/restart on canvas click or touch
+    this.canvas.addEventListener('click', () => this.handleCanvasInteraction());
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      this.handleCanvasInteraction();
+    }, { passive: false });
+
+    // Touch controls for movement
     let touchStartX = 0;
     let touchStartY = 0;
     const minSwipeDistance = 30;
@@ -81,7 +88,6 @@ const BattleCity = {
     this.canvas.addEventListener('touchstart', (e) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
-      e.preventDefault();
     }, { passive: false });
 
     this.canvas.addEventListener('touchmove', (e) => {
@@ -112,9 +118,9 @@ const BattleCity = {
           }
         }
       }
-      e.preventDefault();
     }, { passive: false });
 
+    // Double tap to shoot
     let lastTap = 0;
     this.canvas.addEventListener('touchend', (e) => {
       if (!this.isRunning) return;
@@ -126,6 +132,52 @@ const BattleCity = {
       }
       lastTap = currentTime;
     });
+
+    // Games dropdown
+    const gamesBtn = document.getElementById('gamesBtn');
+    const gamesDropdown = document.getElementById('gamesDropdown');
+    gamesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      gamesDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', () => {
+      gamesDropdown.classList.remove('show');
+    });
+
+    gamesDropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // Help dropdown
+    const helpBtn = document.getElementById('helpBtn');
+    const helpDropdown = document.getElementById('helpDropdown');
+    helpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      helpDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', () => {
+      helpDropdown.classList.remove('show');
+    });
+
+    helpDropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // Locale dropdown
+    document.getElementById('localeSelect').addEventListener('change', (e) => {
+      this.loadHelpText(e.target.value);
+    });
+  },
+
+  handleCanvasInteraction: function() {
+    if (!this.isRunning) {
+      this.start();
+    } else if (this.isGameOver) {
+      this.reset();
+      this.start();
+    }
   },
 
   shoot: function() {
@@ -141,8 +193,7 @@ const BattleCity = {
   start: function() {
     this.reset();
     this.isRunning = true;
-    document.getElementById('startBtn').textContent = 'Playing...';
-    document.getElementById('startBtn').disabled = true;
+    this.isGameOver = false;
     this.gameLoop = setInterval(() => this.update(), 100);
   },
 
@@ -191,7 +242,6 @@ const BattleCity = {
       }
       if (!bullet.isPlayer && bullet.x === this.player.x && bullet.y === this.player.y) {
         this.lives--;
-        document.getElementById('lives').textContent = this.lives;
         if (this.lives <= 0) {
           this.gameOver();
         }
@@ -202,7 +252,6 @@ const BattleCity = {
         if (enemyIndex !== -1) {
           this.enemies.splice(enemyIndex, 1);
           this.score += 100;
-          document.getElementById('score').textContent = this.score;
           return false;
         }
       }
@@ -280,6 +329,35 @@ const BattleCity = {
       );
       this.ctx.fill();
     });
+
+    // Draw score and lives on canvas
+    this.ctx.fillStyle = 'white';
+    this.ctx.font = '16px Arial';
+    this.ctx.fillText(`Score: ${this.score}`, 10, 20);
+    this.ctx.fillText(`Lives: ${this.lives}`, 10, 40);
+
+    if (this.isGameOver) {
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.fillStyle = 'white';
+      this.ctx.font = 'bold 24px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('Game Over!', this.canvas.width / 2, this.canvas.height / 2 - 20);
+      this.ctx.font = '18px Arial';
+      this.ctx.fillText(`Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 10);
+      this.ctx.fillText('Tap to restart', this.canvas.width / 2, this.canvas.height / 2 + 40);
+      this.ctx.textAlign = 'left';
+    } else if (!this.isRunning) {
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.fillStyle = 'white';
+      this.ctx.font = 'bold 24px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('Battle City', this.canvas.width / 2, this.canvas.height / 2 - 20);
+      this.ctx.font = '18px Arial';
+      this.ctx.fillText('Tap to start', this.canvas.width / 2, this.canvas.height / 2 + 10);
+      this.ctx.textAlign = 'left';
+    }
   },
 
   drawTank: function(tank) {
@@ -310,14 +388,43 @@ const BattleCity = {
 
   gameOver: function() {
     this.isRunning = false;
+    this.isGameOver = true;
     clearInterval(this.gameLoop);
-    document.getElementById('startBtn').textContent = 'Start Game';
-    document.getElementById('startBtn').disabled = false;
-    alert(`Game Over! Score: ${this.score}`);
+    this.draw();
+  },
+
+  loadHelpText: function(locale) {
+    locale = locale || 'en';
+    const helpTexts = {
+      en: {
+        title: 'How to Play',
+        text: 'Use arrow keys or WASD to move your tank. Press space or double-tap to shoot. Destroy enemy tanks to earn points. Avoid enemy bullets and walls!'
+      },
+      zh: {
+        title: '如何玩',
+        text: '使用方向键或WASD移动坦克。按空格键或双击屏幕射击。摧毁敌方坦克获得分数。躲避敌方子弹和墙壁！'
+      }
+    };
+    const help = helpTexts[locale] || helpTexts.en;
+    document.getElementById('helpTitle').textContent = help.title;
+    document.getElementById('helpText').textContent = help.text;
+  },
+
+  loadGames: function() {
+    fetch('https://zihaohong.github.io/data/links/games.json')
+      .then(response => response.json())
+      .then(data => {
+        const locale = document.getElementById('localeSelect').value;
+        const games = data[locale]?.games || data.en.games;
+        const currentPath = window.location.pathname;
+        const dropdown = document.getElementById('gamesDropdown');
+        dropdown.innerHTML = games.map(game => {
+          const isCurrent = currentPath.includes(game.link.replace('https://zihaohong.github.io/', ''));
+          return `<a href="${game.link}" class="${isCurrent ? 'current' : ''}">${game.title}</a>`;
+        }).join('');
+      })
+      .catch(error => console.error('Error loading games:', error));
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  Navbar.init();
-  BattleCity.init();
-});
+document.addEventListener('DOMContentLoaded', () => BattleCity.init());

@@ -5,23 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Battle City</title>
 <link rel="stylesheet" href="css/utils.css">
-<script src="https://zihaohong.github.io/data/lib/navbar/navbar.js"></script>
 </head>
 <body>
-<main>
-  <h1>Battle City</h1>
-  <div class="game-container">
-    <canvas id="gameCanvas" width="520" height="400"></canvas>
-    <div class="game-info">
-      <p>Score: <span id="score">0</span></p>
-      <p>Lives: <span id="lives">3</span></p>
-      <button id="startBtn">Start Game</button>
-    </div>
-    <div class="usage-panel" id="usagePanel">
-      <h3>How to Play</h3>
-      <p id="usageText">Loading...</p>
+<header>
+  <div class="header-left">
+    <button class="games-btn" id="gamesBtn">Games</button>
+    <div class="games-dropdown" id="gamesDropdown"></div>
+  </div>
+  <div class="header-right">
+    <select class="locale-select" id="localeSelect">
+      <option value="en">English</option>
+      <option value="zh">中文</option>
+    </select>
+    <button class="help-btn" id="helpBtn">?</button>
+    <div class="help-dropdown" id="helpDropdown">
+      <h3 id="helpTitle">How to Play</h3>
+      <p id="helpText">Loading...</p>
     </div>
   </div>
+</header>
+<main>
+  <canvas id="gameCanvas" width="520" height="400"></canvas>
 </main>
 <script src="js/utils.js"></script>
 </body>
